@@ -1,146 +1,353 @@
-import streamlit as st
+"""
+Interface Streamlit — Problema da Mochila (Knapsack Problem).
+
+Organização por páginas:
+  • Métodos Básicos    — execução de heurísticas e análise comparativa
+  • Algoritmos Genéticos — módulo em desenvolvimento
+  • Sobre              — descrição do problema e autoria
+"""
+
 import pandas as pd
-import random
+import streamlit as st
 
-# ==========================================
-# 1. ROTINAS LOGÍSTICAS (LÓGICA DO PROBLEMA)
-# ==========================================
+from knapsack import (
+    PROBLEMA_FIXO,
+    KnapsackProblem,
+    analise_comparativa,
+    avaliar_solucao,
+    calcular_peso,
+    calcular_valor_bruto,
+    gerar_problema_aleatorio,
+    gerar_solucao_inicial,
+    subida_de_encosta,
+    subida_de_encosta_tentativas,
+    tempera_simulada,
+)
 
-def gerar_cargas(num_cargas, max_peso, max_lucro):
-    """Gera uma lista de cargas disponíveis para transporte."""
-    cargas = []
-    for i in range(num_cargas):
-        cargas.append({
-            'Selecionar': False, # Nova coluna para a seleção manual
-            'Carga_ID': f'Carga {i+1}',
-            'Peso (kg)': random.randint(100, max_peso),
-            'Lucro do Frete (R$)': random.randint(500, max_lucro)
-        })
-    return pd.DataFrame(cargas)
+# ---------------------------------------------------------------------------
+# Configuração da página
+# ---------------------------------------------------------------------------
 
-def solucao_inicial_gulosa(df_cargas, capacidade_caminhao):
-    """Algoritmo Guloso: Enche o caminhão priorizando as cargas mais rentáveis por kg."""
-    df = df_cargas.copy()
-    df['Rentabilidade (R$/kg)'] = df['Lucro do Frete (R$)'] / df['Peso (kg)']
-    df = df.sort_values(by='Rentabilidade (R$/kg)', ascending=False)
-    
-    peso_acumulado = 0
-    cargas_embarcadas = []
-    
-    for index, row in df.iterrows():
-        if peso_acumulado + row['Peso (kg)'] <= capacidade_caminhao:
-            peso_acumulado += row['Peso (kg)']
-            cargas_embarcadas.append(row['Carga_ID'])
-            
-    return cargas_embarcadas
+st.set_page_config(
+    page_title="Knapsack — Otimização",
+    page_icon="🎒",
+    layout="wide",
+)
 
-def avaliar_embarque(df_cargas, selecao, capacidade_caminhao):
-    """Avalia se a combinação de cargas é possível (viável) ou não (inviável)."""
-    df_selecionados = df_cargas[df_cargas['Carga_ID'].isin(selecao)]
-    
-    peso_total = int(df_selecionados['Peso (kg)'].sum())
-    lucro_total = int(df_selecionados['Lucro do Frete (R$)'].sum())
-    viavel = peso_total <= capacidade_caminhao
-    
-    return peso_total, lucro_total, viavel, df_selecionados
+# ---------------------------------------------------------------------------
+# Session State
+# ---------------------------------------------------------------------------
 
-# ==========================================
-# 2. INTERFACE GRÁFICA (STREAMLIT)
-# ==========================================
+_DEFAULTS: dict = {
+    "problema": None,         # KnapsackProblem atual
+    "solucao_inicial": None,  # List[int] — vetor binário
+    "valor_inicial": 0,       # int — valor avaliado da solução inicial
+}
+for _k, _v in _DEFAULTS.items():
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
 
-st.set_page_config(page_title="Otimização Logística", page_icon="🚚", layout="wide")
+# ---------------------------------------------------------------------------
+# Menu lateral
+# ---------------------------------------------------------------------------
 
-st.title("🚚 Otimização Logística: Carregamento de Caminhão Baú")
-st.markdown("Selecione as cargas para maximizar o lucro do frete sem exceder a capacidade do veículo.")
-
-# Inicializa as variáveis na memória do Streamlit
-if 'df_problema' not in st.session_state:
-    st.session_state['df_problema'] = None
-if 'solucao_algoritmo' not in st.session_state:
-    st.session_state['solucao_algoritmo'] = None
-
-# --- MENU LATERAL ---
 with st.sidebar:
-    st.header("⚙️ Configurações da Frota")
-    num_cargas = st.number_input("Qtd. de Cargas no Pátio", min_value=5, max_value=100, value=15)
-    capacidade = st.number_input("Capacidade do Caminhão (kg)", min_value=500, max_value=10000, value=3000, step=100)
-    
-    st.markdown("---")
-    if st.button("🔄 1. Gerar Novas Cargas", use_container_width=True):
-        st.session_state['df_problema'] = gerar_cargas(num_cargas, 1000, 5000)
-        st.session_state['solucao_algoritmo'] = None
+    st.title("🎒 Knapsack")
+    st.markdown("**Otimização do Baú de Caminhão**")
+    st.divider()
+    pagina = st.radio(
+        "Navegação",
+        ["Métodos Básicos", "Algoritmos Genéticos", "Sobre"],
+        label_visibility="collapsed",
+    )
 
-# --- ÁREA PRINCIPAL ---
-if st.session_state['df_problema'] is not None:
-    df = st.session_state['df_problema']
-    
-    col1, col2 = st.columns([1.2, 1])
-    
-    with col1:
-        st.subheader("📦 Cargas Disponíveis no Pátio")
-        st.caption("Marque a caixinha 'Embarcar?' para testar sua própria combinação.")
-        
-        # Cria uma tabela interativa onde apenas a coluna 'Selecionar' pode ser editada
-        df_editado = st.data_editor(
-            df,
-            column_config={
-                "Selecionar": st.column_config.CheckboxColumn(
-                    "Embarcar?",
-                    help="Selecione as cargas para testar manualmente",
-                    default=False,
-                )
-            },
-            disabled=["Carga_ID", "Peso (kg)", "Lucro do Frete (R$)"], # Bloqueia a edição dos dados reais
-            hide_index=True,
-            use_container_width=True
-        )
-        
-    with col2:
-        st.subheader("🚀 Avaliação e Planejamento")
-        
-        # Cria duas abas visuais para organizar a tela
-        tab_manual, tab_algoritmo = st.tabs(["🖐️ Sua Seleção Manual", "🤖 Algoritmo Guloso"])
-        
-        # --- ABA 1: AVALIAÇÃO MANUAL ---
-        with tab_manual:
-            # Filtra apenas as cargas que o usuário marcou com "True" na tabela
-            selecao_manual = df_editado[df_editado['Selecionar'] == True]['Carga_ID'].tolist()
-            
-            if len(selecao_manual) > 0:
-                peso_man, lucro_man, viavel_man, _ = avaliar_embarque(df, selecao_manual, capacidade)
-                
-                if viavel_man:
-                    st.success("✅ **STATUS: POSSÍVEL (VIÁVEL)** - O caminhão suporta!")
-                else:
-                    st.error("❌ **STATUS: IMPOSSÍVEL (INVIÁVEL)** - Excesso de peso!")
-                    
-                m1, m2 = st.columns(2)
-                m1.metric("Lucro do seu Frete", f"R$ {lucro_man}")
-                m2.metric("Peso Utilizado", f"{peso_man} kg / {capacidade} kg", 
-                          delta=f"{capacidade - peso_man} kg livres", delta_color="normal")
-            else:
-                st.info("Nenhuma carga selecionada. Marque as caixinhas na tabela ao lado!")
+# ===========================================================================
+# PÁGINA: Algoritmos Genéticos
+# ===========================================================================
 
-        # --- ABA 2: ALGORITMO GULOSO ---
-        with tab_algoritmo:
-            if st.button("🧠 2. Gerar Solução (Algoritmo Guloso)"):
-                st.session_state['solucao_algoritmo'] = solucao_inicial_gulosa(df, capacidade)
-                
-            if st.session_state['solucao_algoritmo'] is not None:
-                selecao_algoritmo = st.session_state['solucao_algoritmo']
-                peso_alg, lucro_alg, viavel_alg, df_sol_alg = avaliar_embarque(df, selecao_algoritmo, capacidade)
-                
-                if viavel_alg:
-                    st.success("✅ **STATUS: POSSÍVEL (VIÁVEL)**")
-                else:
-                    st.error("❌ **STATUS: IMPOSSÍVEL (INVIÁVEL)**")
-                
-                m1, m2 = st.columns(2)
-                m1.metric("Lucro do Algoritmo", f"R$ {lucro_alg}")
-                m2.metric("Peso Utilizado", f"{peso_alg} kg / {capacidade} kg", 
-                          delta=f"{capacidade - peso_alg} kg livres", delta_color="normal")
-                
-                with st.expander("Ver Manifesto de Carga do Algoritmo"):
-                    st.dataframe(df_sol_alg[['Carga_ID', 'Peso (kg)', 'Lucro do Frete (R$)']], hide_index=True, use_container_width=True)
+if pagina == "Algoritmos Genéticos":
+    st.title("Algoritmos Genéticos")
+    st.warning("Módulo em desenvolvimento")
+
+# ===========================================================================
+# PÁGINA: Sobre
+# ===========================================================================
+
+elif pagina == "Sobre":
+    st.title("Sobre o Projeto")
+
+    st.markdown("""
+## Problema da Mochila (Knapsack Problem)
+
+O **Problema da Mochila** é um dos problemas clássicos de **Otimização Combinatória**,
+enquadrado na categoria NP-difícil. O objetivo é selecionar um subconjunto de itens —
+cada um com um peso e um valor associados — de forma a **maximizar o valor total**
+sem exceder a capacidade máxima da mochila.
+
+### Aplicação: Carregamento de Baú de Caminhão
+
+Neste projeto, o problema é modelado no contexto logístico de carregamento de um
+**baú de caminhão**:
+
+| Elemento do Knapsack | Elemento Logístico          |
+|----------------------|-----------------------------|
+| Itens                | Cargas disponíveis no pátio |
+| Peso do item         | Peso da carga (kg)          |
+| Valor do item        | Lucro do frete (R$)         |
+| Capacidade da mochila| Capacidade do caminhão (kg) |
+
+A solução é representada como um **vetor binário** de tamanho N, onde o bit `1`
+indica que a carga foi selecionada e `0` que foi descartada.
+
+### Heurísticas Implementadas
+
+| Sigla | Nome completo                         |
+|-------|---------------------------------------|
+| SE    | Subida de Encosta (Hill Climbing)     |
+| SET   | Subida de Encosta com Tentativas      |
+| TE    | Têmpera Simulada (Simulated Annealing)|
+
+---
+
+## Discente(s)
+
+- **Mateus Motta**
+""")
+
+# ===========================================================================
+# PÁGINA: Métodos Básicos
+# ===========================================================================
+
 else:
-    st.info("👈 Use o menu lateral para gerar as cargas do dia e iniciar o planejamento!")
+    st.title("🔬 Métodos Básicos de Otimização")
+
+    # -----------------------------------------------------------------------
+    # Coluna esquerda — configuração do problema
+    # -----------------------------------------------------------------------
+    col_esq, col_dir = st.columns([1, 1.6], gap="large")
+
+    with col_esq:
+        st.subheader("⚙️ Configuração do Problema")
+
+        tipo = st.radio(
+            "Tipo de Execução",
+            ["FIXO", "ALEATÓRIO"],
+            horizontal=True,
+        )
+
+        n_val: int = PROBLEMA_FIXO.n
+        if tipo == "ALEATÓRIO":
+            n_val = st.number_input(
+                "Tamanho do Problema (N — número de itens)",
+                min_value=5,
+                max_value=200,
+                value=20,
+                step=1,
+            )
+
+        if st.button("📦 Gerar Problema", use_container_width=True, type="primary"):
+            if tipo == "FIXO":
+                st.session_state.problema = PROBLEMA_FIXO
+            else:
+                st.session_state.problema = gerar_problema_aleatorio(int(n_val))
+            # Invalida a solução anterior ao gerar novo problema
+            st.session_state.solucao_inicial = None
+            st.session_state.valor_inicial = 0
+
+        # Exibe o problema gerado
+        if st.session_state.problema is not None:
+            prob: KnapsackProblem = st.session_state.problema
+
+            st.divider()
+            c1, c2 = st.columns(2)
+            c1.metric("N (itens)", prob.n)
+            c2.metric("Capacidade (kg)", prob.capacidade)
+
+            df_itens = pd.DataFrame(
+                {
+                    "Item": [f"Item {i + 1}" for i in range(prob.n)],
+                    "Peso": prob.pesos,
+                    "Valor": prob.valores,
+                }
+            )
+            st.dataframe(df_itens, hide_index=True, use_container_width=True, height=220)
+
+    # -----------------------------------------------------------------------
+    # Coluna direita — solução inicial e heurísticas
+    # -----------------------------------------------------------------------
+    with col_dir:
+        if st.session_state.problema is None:
+            st.info("👈 Gere um problema para começar.")
+        else:
+            prob: KnapsackProblem = st.session_state.problema
+
+            # --- Solução Inicial ---
+            st.subheader("🎯 Solução Inicial (Gulosa)")
+
+            if st.button("Gerar Solução Inicial", use_container_width=True):
+                sol_ini = gerar_solucao_inicial(prob)
+                st.session_state.solucao_inicial = sol_ini
+                st.session_state.valor_inicial = avaliar_solucao(sol_ini, prob)
+
+            if st.session_state.solucao_inicial is not None:
+                sol_ini = st.session_state.solucao_inicial
+                val_ini = st.session_state.valor_inicial
+                peso_ini = calcular_peso(sol_ini, prob)
+
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Valor Total", val_ini)
+                c2.metric("Peso Utilizado", f"{peso_ini} / {prob.capacidade}")
+                c3.metric("Itens Selecionados", sum(sol_ini))
+
+                with st.expander("Ver vetor binário da solução inicial"):
+                    st.code(
+                        "  ".join(str(b) for b in sol_ini),
+                        language=None,
+                    )
+                    sel = [f"Item {i+1}" for i, b in enumerate(sol_ini) if b == 1]
+                    st.caption("Itens selecionados: " + ", ".join(sel))
+
+                st.divider()
+
+                # --- Seleção de Heurística ---
+                st.subheader("🧠 Heurística")
+
+                heuristica = st.selectbox(
+                    "Selecione a Heurística",
+                    [
+                        "Subida de Encosta",
+                        "Subida de Encosta com Tentativas",
+                        "Têmpera Simulada",
+                        "Análise Comparativa",
+                    ],
+                )
+
+                # Parâmetros condicionais
+                tmax: int = prob.n
+                ti: float = 100.0
+                tf: float = 0.1
+                fr: float = 0.8
+
+                if heuristica == "Subida de Encosta com Tentativas":
+                    tmax = st.number_input(
+                        "TMAX (número máximo de tentativas / reinicializações)",
+                        min_value=1,
+                        value=prob.n,
+                        step=1,
+                    )
+
+                elif heuristica == "Têmpera Simulada":
+                    col_a, col_b, col_c = st.columns(3)
+                    ti = col_a.number_input(
+                        "TI — Temperatura Inicial",
+                        min_value=1.0,
+                        value=100.0,
+                        step=10.0,
+                    )
+                    tf = col_b.number_input(
+                        "TF — Temperatura Final",
+                        min_value=0.001,
+                        value=0.1,
+                        step=0.01,
+                        format="%.3f",
+                    )
+                    fr = col_c.number_input(
+                        "FR — Fator de Resfriamento",
+                        min_value=0.01,
+                        max_value=0.999,
+                        value=0.8,
+                        step=0.01,
+                        format="%.3f",
+                    )
+
+                # --- Botão Executar ---
+                if st.button("▶️ Executar", use_container_width=True, type="primary"):
+                    sol_ini = st.session_state.solucao_inicial
+                    val_ini = st.session_state.valor_inicial
+
+                    # ............. Análise Comparativa .............
+                    if heuristica == "Análise Comparativa":
+                        with st.spinner("Executando todas as configurações…"):
+                            df_comp = analise_comparativa(sol_ini, prob)
+
+                        st.subheader("📊 Análise Comparativa")
+                        st.caption(f"Valor da Solução Inicial (gulosa): **{val_ini}**")
+
+                        # Destaca a linha de maior ganho
+                        st.dataframe(
+                            df_comp,
+                            hide_index=True,
+                            use_container_width=True,
+                            column_config={
+                                "Ganho": st.column_config.NumberColumn(
+                                    "Ganho",
+                                    help="Ganho em relação à solução inicial",
+                                    format="%+d",
+                                ),
+                                "Valor Final": st.column_config.NumberColumn(
+                                    "Valor Final",
+                                    format="%d",
+                                ),
+                            },
+                        )
+
+                        melhor = df_comp.loc[df_comp["Ganho"].idxmax()]
+                        st.success(
+                            f"Melhor resultado: **{melhor['Método']}** "
+                            f"({melhor['Observação']}) — "
+                            f"Valor Final = {melhor['Valor Final']}, "
+                            f"Ganho = {melhor['Ganho']:+d}"
+                        )
+
+                    # ............. Heurísticas Individuais .............
+                    else:
+                        with st.spinner("Executando heurística…"):
+                            if heuristica == "Subida de Encosta":
+                                sol_f, val_f, hist = subida_de_encosta(sol_ini, prob)
+                                label = "Subida de Encosta (SE)"
+
+                            elif heuristica == "Subida de Encosta com Tentativas":
+                                sol_f, val_f, hist = subida_de_encosta_tentativas(
+                                    sol_ini, prob, int(tmax)
+                                )
+                                label = f"SET  (TMAX = {int(tmax)})"
+
+                            else:  # Têmpera Simulada
+                                sol_f, val_f, hist = tempera_simulada(
+                                    sol_ini, prob, ti, tf, fr
+                                )
+                                label = f"Têmpera Simulada  (TI={ti}, TF={tf}, FR={fr})"
+
+                        ganho = val_f - val_ini
+
+                        st.subheader(f"📈 Resultado — {label}")
+
+                        c1, c2, c3 = st.columns(3)
+                        c1.metric(
+                            "Valor Final",
+                            val_f,
+                            delta=f"{ganho:+d}",
+                            delta_color="normal" if ganho >= 0 else "inverse",
+                        )
+                        c2.metric(
+                            "Peso Final",
+                            f"{calcular_peso(sol_f, prob)} / {prob.capacidade}",
+                        )
+                        c3.metric("Ganho vs Solução Inicial", f"{ganho:+d}")
+
+                        with st.expander("Ver vetor binário da solução final"):
+                            st.code(
+                                "  ".join(str(b) for b in sol_f),
+                                language=None,
+                            )
+                            sel_f = [f"Item {i+1}" for i, b in enumerate(sol_f) if b == 1]
+                            st.caption("Itens selecionados: " + ", ".join(sel_f))
+
+                        if len(hist) > 1:
+                            st.subheader("Curva de Convergência")
+                            st.line_chart(
+                                pd.DataFrame({"Melhor Valor": hist}),
+                                use_container_width=True,
+                            )
+                        else:
+                            st.info("A heurística convergiu em um único passo — sem evolução a exibir.")

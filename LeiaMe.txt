@@ -1,0 +1,90 @@
+========================================================
+  PROJETO: Otimização de Baú de Caminhão (Knapsack)
+  Disciplina: Programação Linear / Pesquisa Operacional
+  Discente: Mateus Motta
+========================================================
+
+DESCRIÇÃO
+---------
+Aplicação Streamlit que resolve o Problema da Mochila (Knapsack Problem)
+aplicado ao carregamento de um baú de caminhão.
+
+Heurísticas implementadas:
+  • SE  — Subida de Encosta (Hill Climbing)
+  • SET — Subida de Encosta com Tentativas (reinicializações aleatórias)
+  • TE  — Têmpera Simulada (Simulated Annealing)
+
+Além de uma Análise Comparativa automática que executa 12 configurações
+diferentes e consolida os resultados em uma tabela.
+
+
+ESTRUTURA DE ARQUIVOS
+---------------------
+  app.py        — Interface Streamlit (front-end)
+  knapsack.py   — Lógica do problema e algoritmos (back-end)
+  LeiaMe.txt    — Este arquivo
+
+
+PRÉ-REQUISITOS
+--------------
+  • Python 3.9 ou superior
+  • pip (gerenciador de pacotes Python)
+
+
+INSTALAÇÃO DAS DEPENDÊNCIAS
+----------------------------
+Abra o terminal (Prompt de Comando, PowerShell ou bash) na pasta do projeto
+e execute:
+
+  pip install streamlit pandas
+
+Ou, se preferir isolar o ambiente:
+
+  python -m venv venv
+  venv\Scripts\activate          (Windows)
+  source venv/bin/activate        (Linux/macOS)
+  pip install streamlit pandas
+
+
+COMO EXECUTAR
+-------------
+No terminal, dentro da pasta do projeto:
+
+  streamlit run app.py
+
+O Streamlit abrirá automaticamente o navegador em:
+  http://localhost:8501
+
+
+COMO USAR A APLICAÇÃO
+---------------------
+1. No menu lateral, selecione "Métodos Básicos".
+2. Escolha o Tipo de Execução:
+     • FIXO     — usa uma instância pré-definida (10 itens, cap. 20).
+     • ALEATÓRIO — informe N (tamanho) e clique em "Gerar Problema".
+3. Clique em "Gerar Problema" para criar/carregar a instância.
+4. Clique em "Gerar Solução Inicial" para obter a solução gulosa base.
+5. Selecione a Heurística desejada:
+     • Subida de Encosta           — sem parâmetros extras.
+     • Subida de Encosta com Tent. — informe TMAX.
+     • Têmpera Simulada            — informe TI, TF e FR.
+     • Análise Comparativa         — executa todas as 12 configurações.
+6. Clique em "Executar" para rodar a heurística e ver os resultados.
+
+
+PARÂMETROS DAS HEURÍSTICAS
+---------------------------
+  SET:
+    TMAX  — número de reinicializações aleatórias (ex.: N, N/2, 2*N)
+
+  TE:
+    TI    — temperatura inicial (ex.: 100, 200, 500)
+    TF    — temperatura final   (ex.: 0.1, 0.01)
+    FR    — fator de resfriamento entre 0 e 1 (ex.: 0.8, 0.9)
+
+
+DEPENDÊNCIAS COMPLETAS (pip freeze)
+-------------------------------------
+  streamlit>=1.30.0
+  pandas>=1.5.0
+========================================================
