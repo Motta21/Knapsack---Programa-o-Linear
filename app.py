@@ -47,23 +47,15 @@ with st.sidebar:
     st.divider()
     pagina = st.radio(
         "Navegação",
-        ["Métodos Básicos", "Algoritmos Genéticos", "Sobre"],
+        ["Métodos Básicos", "Sobre"],
         label_visibility="collapsed",
     )
-
-# ===========================================================================
-# PÁGINA: Algoritmos Genéticos
-# ===========================================================================
-
-if pagina == "Algoritmos Genéticos":
-    st.title("Algoritmos Genéticos")
-    st.warning("Módulo em desenvolvimento")
 
 # ===========================================================================
 # PÁGINA: Sobre
 # ===========================================================================
 
-elif pagina == "Sobre":
+if pagina == "Sobre":
     st.title("Sobre o Projeto")
 
     st.markdown("""
@@ -102,6 +94,7 @@ indica que a carga foi selecionada e `0` que foi descartada.
 ## Discente(s)
 
 - **Mateus Motta**
+- **Álefe Alexandre**
 """)
 
 # ===========================================================================
@@ -167,7 +160,7 @@ else:
     # -----------------------------------------------------------------------
     with col_dir:
         if st.session_state.problema is None:
-            st.info("👈 Gere um problema para começar.")
+            st.info("Gere um problema para começar.")
         else:
             prob: KnapsackProblem = st.session_state.problema
 
@@ -260,7 +253,7 @@ else:
                         with st.spinner("Executando todas as configurações…"):
                             df_comp = analise_comparativa(sol_ini, prob)
 
-                        st.subheader("📊 Análise Comparativa")
+                        st.subheader("Análise Comparativa")
                         st.caption(f"Valor da Solução Inicial (gulosa): **{val_ini}**")
 
                         # Destaca a linha de maior ganho
