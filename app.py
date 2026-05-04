@@ -1,12 +1,3 @@
-"""
-Interface Streamlit — Problema da Mochila (Knapsack Problem).
-
-Organização por páginas:
-  • Métodos Básicos    — execução de heurísticas e análise comparativa
-  • Algoritmos Genéticos — módulo em desenvolvimento
-  • Sobre              — descrição do problema e autoria
-"""
-
 import pandas as pd
 import streamlit as st
 
@@ -30,7 +21,6 @@ from knapsack import (
 
 st.set_page_config(
     page_title="Knapsack — Otimização",
-    page_icon="🎒",
     layout="wide",
 )
 
@@ -52,7 +42,7 @@ for _k, _v in _DEFAULTS.items():
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    st.title("🎒 Knapsack")
+    st.title("Knapsack")
     st.markdown("**Otimização do Baú de Caminhão**")
     st.divider()
     pagina = st.radio(
@@ -119,7 +109,7 @@ indica que a carga foi selecionada e `0` que foi descartada.
 # ===========================================================================
 
 else:
-    st.title("🔬 Métodos Básicos de Otimização")
+    st.title("Métodos Básicos de Otimização")
 
     # -----------------------------------------------------------------------
     # Coluna esquerda — configuração do problema
@@ -127,7 +117,7 @@ else:
     col_esq, col_dir = st.columns([1, 1.6], gap="large")
 
     with col_esq:
-        st.subheader("⚙️ Configuração do Problema")
+        st.subheader("Configuração do Problema")
 
         tipo = st.radio(
             "Tipo de Execução",
@@ -145,7 +135,7 @@ else:
                 step=1,
             )
 
-        if st.button("📦 Gerar Problema", use_container_width=True, type="primary"):
+        if st.button("Gerar Problema", use_container_width=True, type="primary"):
             if tipo == "FIXO":
                 st.session_state.problema = PROBLEMA_FIXO
             else:
@@ -182,7 +172,7 @@ else:
             prob: KnapsackProblem = st.session_state.problema
 
             # --- Solução Inicial ---
-            st.subheader("🎯 Solução Inicial (Gulosa)")
+            st.subheader("Solução Inicial (Gulosa)")
 
             if st.button("Gerar Solução Inicial", use_container_width=True):
                 sol_ini = gerar_solucao_inicial(prob)
@@ -210,7 +200,7 @@ else:
                 st.divider()
 
                 # --- Seleção de Heurística ---
-                st.subheader("🧠 Heurística")
+                st.subheader("Heurística")
 
                 heuristica = st.selectbox(
                     "Selecione a Heurística",
@@ -261,7 +251,7 @@ else:
                     )
 
                 # --- Botão Executar ---
-                if st.button("▶️ Executar", use_container_width=True, type="primary"):
+                if st.button("Executar", use_container_width=True, type="primary"):
                     sol_ini = st.session_state.solucao_inicial
                     val_ini = st.session_state.valor_inicial
 
@@ -320,7 +310,7 @@ else:
 
                         ganho = val_f - val_ini
 
-                        st.subheader(f"📈 Resultado — {label}")
+                        st.subheader(f"Resultado — {label}")
 
                         c1, c2, c3 = st.columns(3)
                         c1.metric(
