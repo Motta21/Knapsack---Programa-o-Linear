@@ -1,3 +1,12 @@
+"""
+Interface Streamlit — Problema da Mochila (Knapsack Problem).
+
+Organização por páginas:
+  • Métodos Básicos    — execução de heurísticas e análise comparativa
+  • Algoritmos Genéticos — módulo em desenvolvimento
+  • Sobre              — descrição do problema e autoria
+"""
+
 import pandas as pd
 import streamlit as st
 
@@ -47,15 +56,23 @@ with st.sidebar:
     st.divider()
     pagina = st.radio(
         "Navegação",
-        ["Métodos Básicos", "Sobre"],
+        ["Métodos Básicos", "Algoritmos Genéticos", "Sobre"],
         label_visibility="collapsed",
     )
+
+# ===========================================================================
+# PÁGINA: Algoritmos Genéticos
+# ===========================================================================
+
+if pagina == "Algoritmos Genéticos":
+    st.title("Algoritmos Genéticos")
+    st.warning("Módulo em desenvolvimento")
 
 # ===========================================================================
 # PÁGINA: Sobre
 # ===========================================================================
 
-if pagina == "Sobre":
+elif pagina == "Sobre":
     st.title("Sobre o Projeto")
 
     st.markdown("""
@@ -94,7 +111,6 @@ indica que a carga foi selecionada e `0` que foi descartada.
 ## Discente(s)
 
 - **Mateus Motta**
-- **Álefe Alexandre**
 """)
 
 # ===========================================================================
@@ -102,7 +118,7 @@ indica que a carga foi selecionada e `0` que foi descartada.
 # ===========================================================================
 
 else:
-    st.title("Métodos Básicos de Otimização")
+    st.title("🔬 Métodos Básicos de Otimização")
 
     # -----------------------------------------------------------------------
     # Coluna esquerda — configuração do problema
@@ -160,7 +176,7 @@ else:
     # -----------------------------------------------------------------------
     with col_dir:
         if st.session_state.problema is None:
-            st.info("Gere um problema para começar.")
+            st.info("👈 Gere um problema para começar.")
         else:
             prob: KnapsackProblem = st.session_state.problema
 
