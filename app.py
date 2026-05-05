@@ -1,12 +1,3 @@
-"""
-Interface Streamlit — Problema da Mochila (Knapsack Problem).
-
-Organização por páginas:
-  • Métodos Básicos    — execução de heurísticas e análise comparativa
-  • Algoritmos Genéticos — módulo em desenvolvimento
-  • Sobre              — descrição do problema e autoria
-"""
-
 import pandas as pd
 import streamlit as st
 
