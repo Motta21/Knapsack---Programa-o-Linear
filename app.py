@@ -111,6 +111,7 @@ indica que a carga foi selecionada e `0` que foi descartada.
 ## Discente(s)
 
 - **Mateus Motta**
+- **Álefe Alexandre**
 """)
 
 # ===========================================================================
@@ -118,7 +119,7 @@ indica que a carga foi selecionada e `0` que foi descartada.
 # ===========================================================================
 
 else:
-    st.title("🔬 Métodos Básicos de Otimização")
+    st.title("Métodos Básicos de Otimização")
 
     # -----------------------------------------------------------------------
     # Coluna esquerda — configuração do problema
@@ -176,7 +177,7 @@ else:
     # -----------------------------------------------------------------------
     with col_dir:
         if st.session_state.problema is None:
-            st.info("👈 Gere um problema para começar.")
+            st.info("Gere um problema para começar.")
         else:
             prob: KnapsackProblem = st.session_state.problema
 
