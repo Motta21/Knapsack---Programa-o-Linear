@@ -47,23 +47,15 @@ with st.sidebar:
     st.divider()
     pagina = st.radio(
         "Navegação",
-        ["Métodos Básicos", "Algoritmos Genéticos", "Sobre"],
+        ["Métodos Básicos", "Sobre"],
         label_visibility="collapsed",
     )
-
-# ===========================================================================
-# PÁGINA: Algoritmos Genéticos
-# ===========================================================================
-
-if pagina == "Algoritmos Genéticos":
-    st.title("Algoritmos Genéticos")
-    st.warning("Módulo em desenvolvimento")
 
 # ===========================================================================
 # PÁGINA: Sobre
 # ===========================================================================
 
-elif pagina == "Sobre":
+if pagina == "Sobre":
     st.title("Sobre o Projeto")
 
     st.markdown("""
