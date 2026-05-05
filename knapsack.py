@@ -122,7 +122,7 @@ def _get_vizinho(solucao: List[int], idx: int) -> List[int]:
 
 
 # ---------------------------------------------------------------------------
-# Heurística 1 — Subida de Encosta (SE)
+# Subida de Encosta (SE)
 # ---------------------------------------------------------------------------
 
 def subida_de_encosta(
@@ -163,7 +163,7 @@ def subida_de_encosta(
 
 
 # ---------------------------------------------------------------------------
-# Heurística 2 — Subida de Encosta com Tentativas (SET)
+# Subida de Encosta com Tentativas (SET)
 # ---------------------------------------------------------------------------
 
 def subida_de_encosta_tentativas(
@@ -202,7 +202,7 @@ def subida_de_encosta_tentativas(
 
 
 # ---------------------------------------------------------------------------
-# Heurística 3 — Têmpera Simulada (TE)
+# Têmpera Simulada (TE)
 # ---------------------------------------------------------------------------
 
 def tempera_simulada(
