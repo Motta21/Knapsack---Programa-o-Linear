@@ -51,7 +51,7 @@ for _k, _v in _DEFAULTS.items():
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    st.title("🚛 Knapsack")
+    st.title("Knapsack")
     st.markdown("**Otimização do Baú de Caminhão**")
     st.divider()
     pagina = st.radio(

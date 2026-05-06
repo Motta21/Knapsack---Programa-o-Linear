@@ -1,14 +1,3 @@
-"""
-Módulo de lógica — Problema da Mochila (Knapsack / Baú de Caminhão).
-
-Implementa exatamente os algoritmos apresentados na lousa pelo professor:
-  - Sucessor         : remove item aleatório + repreenchimento greedy
-  - Subida de Encosta (SE)
-  - Subida de Encosta com Tentativas (SET)
-  - Têmpera Simulada (TE)
-  - Análise Comparativa (Tabela 1 do PDF)
-"""
-
 import math
 import random
 from dataclasses import dataclass
@@ -18,7 +7,6 @@ import pandas as pd
 
 @dataclass
 class KnapsackProblem:
-    """Representa uma instância do Problema da Mochila."""
     n: int
     pesos: List[int]
     valores: List[int]
@@ -32,21 +20,12 @@ PROBLEMA_FIXO = KnapsackProblem(
 )
 
 def gerar_problema_aleatorio(n: int) -> KnapsackProblem:
-    """Gera instância aleatória com *n* itens.
-
-    Capacidade = 50 % da soma total dos pesos.
-    """
     pesos     = [random.randint(1, 20) for _ in range(n)]
     valores   = [random.randint(1, 50) for _ in range(n)]
     capacidade = max(1, int(sum(pesos) * 0.5))
     return KnapsackProblem(n=n, pesos=pesos, valores=valores, capacidade=capacidade)
 
 def avalia(solucao: List[int], prob: KnapsackProblem) -> int:
-    """Retorna o valor total da solução.
-
-    Retorna 0 para soluções inviáveis (peso > capacidade).
-    Equivale ao método avalia() do pseudocódigo do professor.
-    """
     peso  = sum(prob.pesos[i]   for i in range(prob.n) if solucao[i] == 1)
     valor = sum(prob.valores[i] for i in range(prob.n) if solucao[i] == 1)
     return valor if peso <= prob.capacidade else 0
@@ -55,18 +34,16 @@ avaliar_solucao = avalia
 
 
 def calcular_peso(solucao: List[int], prob: KnapsackProblem) -> int:
-    """Retorna o peso total da solução (independente de viabilidade)."""
     return sum(prob.pesos[i] for i in range(prob.n) if solucao[i] == 1)
 
 def gerar_solucao_inicial(prob: KnapsackProblem) -> List[int]:
-    """Solução inicial greedy (razão valor/peso decrescente)."""
     indices = sorted(
         range(prob.n),
         key=lambda i: prob.valores[i] / prob.pesos[i],
         reverse=True,
     )
     SUC = [0] * prob.n
-    VS  = 0                       # peso acumulado
+    VS  = 0
     for i in indices:
         SUC[i] = 1
         VS += prob.pesos[i]
@@ -175,14 +152,14 @@ def tempera_simulada(
                 VM     = VA
                 historico.append(VM)
         else:
-            D   = VA - VN                                  # delta positivo
+            D   = VA - VN
             AUX = math.exp(-D / T) if T > 0 else 0.0
             ALE = random.random()
             if ALE < AUX:
                 ATUAL = NOVO
                 VA    = VN
 
-        T *= FR                                             # resfriamento
+        T *= FR
 
     return MELHOR, VM, historico
 
