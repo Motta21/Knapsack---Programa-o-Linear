@@ -1,6 +1,7 @@
 import math
 import random
 from dataclasses import dataclass
+from math import ceil
 from typing import List, Tuple
 
 import pandas as pd
@@ -162,6 +163,153 @@ def tempera_simulada(
         T *= FR
 
     return MELHOR, VM, historico
+
+# ===========================================================================
+# ALGORITMO GENÉTICO
+# ===========================================================================
+
+def _ag_cromossomo_aleatorio(prob: KnapsackProblem) -> List[int]:
+    return [random.randint(0, 1) for _ in range(prob.n)]
+
+
+def _ag_ajusta_restricao(sol: List[int], prob: KnapsackProblem) -> List[int]:
+    """Remove itens aleatórios até o peso respeitar a capacidade.
+
+    Melhoria sobre o método básico: prioriza remover itens com pior
+    relação valor/peso (menor custo de remoção), tornando a correção
+    mais inteligente do que uma remoção puramente aleatória.
+    """
+    s = sol.copy()
+    peso = calcular_peso(s, prob)
+    while peso > prob.capacidade:
+        selecionados = [i for i in range(prob.n) if s[i] == 1]
+        if not selecionados:
+            break
+        # Remove o item com pior relação valor/peso entre os selecionados
+        pior = min(selecionados, key=lambda i: prob.valores[i] / prob.pesos[i])
+        s[pior] = 0
+        peso -= prob.pesos[pior]
+    return s
+
+
+def _ag_pop_inicial(prob: KnapsackProblem, tp: int) -> List[List[int]]:
+    pop = []
+    # Inclui a solução gulosa como primeiro indivíduo (diversidade + qualidade)
+    pop.append(gerar_solucao_inicial(prob))
+    for _ in range(tp - 1):
+        c = _ag_cromossomo_aleatorio(prob)
+        pop.append(_ag_ajusta_restricao(c, prob))
+    return pop
+
+
+def _ag_aptidao(pop: List[List[int]], prob: KnapsackProblem) -> List[float]:
+    fit = [float(avalia(s, prob)) for s in pop]
+    soma = sum(fit)
+    if soma == 0:
+        return [1.0 / len(pop)] * len(pop)
+    return [f / soma for f in fit]
+
+
+def _ag_roleta(fit: List[float]) -> int:
+    ale = random.random()
+    soma = 0.0
+    for i, f in enumerate(fit):
+        soma += f
+        if soma >= ale:
+            return i
+    return len(fit) - 1
+
+
+def _ag_ordena(
+    pop: List[List[int]], fit: List[float]
+) -> Tuple[List[List[int]], List[float]]:
+    pares = sorted(zip(pop, fit), key=lambda x: x[1], reverse=True)
+    pop_s, fit_s = zip(*pares)
+    return list(pop_s), list(fit_s)
+
+
+def _ag_cruzamento(
+    p1: List[int], p2: List[int], ponto: int
+) -> Tuple[List[int], List[int]]:
+    d1 = p1[:ponto] + p2[ponto:]
+    d2 = p2[:ponto] + p1[ponto:]
+    return d1, d2
+
+
+def _ag_mutacao(d: List[int]) -> List[int]:
+    s = d.copy()
+    pos = random.randrange(len(s))
+    s[pos] = 1 - s[pos]
+    return s
+
+
+def _ag_nova_pop(
+    pop: List[List[int]], desc: List[List[int]], tp: int, ig: float
+) -> List[List[int]]:
+    elite = ceil(ig * tp)
+    return pop[:elite] + desc[: tp - elite]
+
+
+def algoritmo_genetico(
+    prob: KnapsackProblem,
+    tp: int,
+    ng: int,
+    tc: float,
+    tm: float,
+    ig: float,
+) -> Tuple[List[int], List[int], int, int, List[int]]:
+    """Executa o Algoritmo Genético para o Problema da Mochila.
+
+    Retorna: (solucao_inicial, solucao_final, valor_inicial, valor_final, historico)
+    O histórico registra apenas melhorias, permitindo traçar a curva de convergência.
+    """
+    pop = _ag_pop_inicial(prob, tp)
+    fit = _ag_aptidao(pop, prob)
+    pop, fit = _ag_ordena(pop, fit)
+
+    si = pop[0].copy()
+    vi = avalia(si, prob)
+    historico: List[int] = [vi]
+
+    for _ in range(ng):
+        desc: List[List[int]] = []
+        corte = random.randint(1, prob.n - 1)
+
+        while len(desc) < 2 * tp:
+            p1 = pop[_ag_roleta(fit)]
+            p2 = pop[_ag_roleta(fit)]
+
+            if random.random() <= tc:
+                d1, d2 = _ag_cruzamento(p1, p2, corte)
+            else:
+                d1, d2 = p1.copy(), p2.copy()
+
+            if random.random() <= tm:
+                d1 = _ag_mutacao(d1)
+            if random.random() <= tm:
+                d2 = _ag_mutacao(d2)
+
+            desc.append(_ag_ajusta_restricao(d1, prob))
+            desc.append(_ag_ajusta_restricao(d2, prob))
+
+        fit_d = _ag_aptidao(desc, prob)
+        desc, fit_d = _ag_ordena(desc, fit_d)
+        pop = _ag_nova_pop(pop, desc, tp, ig)
+        fit = _ag_aptidao(pop, prob)
+        pop, fit = _ag_ordena(pop, fit)
+
+        melhor_val = avalia(pop[0], prob)
+        if melhor_val > historico[-1]:
+            historico.append(melhor_val)
+
+    sf = pop[0].copy()
+    vf = avalia(sf, prob)
+    return si, sf, vi, vf, historico
+
+
+# ===========================================================================
+# ANÁLISE COMPARATIVA (heurísticas clássicas)
+# ===========================================================================
 
 def analise_comparativa(
     SI: List[int],

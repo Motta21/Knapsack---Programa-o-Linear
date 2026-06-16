@@ -1,27 +1,37 @@
 ========================================================
   PROJETO: Otimização de Baú de Caminhão (Knapsack)
   Disciplina: Programação Linear / Pesquisa Operacional
-  Discente: Mateus Motta
+  Discentes: Mateus Motta | Álefe Alexandre
 ========================================================
 
 DESCRIÇÃO
 ---------
 Aplicação Streamlit que resolve o Problema da Mochila (Knapsack Problem)
-aplicado ao carregamento de um baú de caminhão.
+aplicado ao carregamento de um baú de caminhão, utilizando tanto heurísticas
+clássicas quanto Algoritmo Genético (AG).
 
-Heurísticas implementadas:
-  • SE  — Subida de Encosta (Hill Climbing)
-  • SET — Subida de Encosta com Tentativas (reinicializações aleatórias)
-  • TE  — Têmpera Simulada (Simulated Annealing)
+Módulos implementados:
 
-Além de uma Análise Comparativa automática que executa 12 configurações
-diferentes e consolida os resultados em uma tabela.
+  Métodos Básicos:
+    • SE  — Subida de Encosta (Hill Climbing)
+    • SET — Subida de Encosta com Tentativas
+    • TE  — Têmpera Simulada (Simulated Annealing)
+    • Análise Comparativa (12 configurações automáticas)
+
+  Algoritmos Genéticos:
+    • Seleção por Roleta proporcional à aptidão
+    • Cruzamento de ponto único (taxa configurável)
+    • Mutação bit-flip (taxa configurável)
+    • Elitismo configurável (intervalo de geração)
+    • Ajuste de restrição inteligente: remoção pelo pior valor/peso
+    • Exibição de ganho absoluto E percentual (%)
+    • Curva de convergência geração a geração
 
 
 ESTRUTURA DE ARQUIVOS
 ---------------------
   app.py        — Interface Streamlit (front-end)
-  knapsack.py   — Lógica do problema e algoritmos (back-end)
+  knapsack.py   — Lógica do problema, heurísticas e AG (back-end)
   LeiaMe.txt    — Este arquivo
 
 
@@ -56,8 +66,8 @@ O Streamlit abrirá automaticamente o navegador em:
   http://localhost:8501
 
 
-COMO USAR A APLICAÇÃO
----------------------
+COMO USAR — MÉTODOS BÁSICOS
+-----------------------------
 1. No menu lateral, selecione "Métodos Básicos".
 2. Escolha o Tipo de Execução:
      • FIXO     — usa uma instância pré-definida (10 itens, cap. 20).
@@ -68,19 +78,47 @@ COMO USAR A APLICAÇÃO
      • Subida de Encosta           — sem parâmetros extras.
      • Subida de Encosta com Tent. — informe TMAX.
      • Têmpera Simulada            — informe TI, TF e FR.
-     • Análise Comparativa         — executa todas as 12 configurações.
+     • Análise Comparativa         — executa todas as configurações.
 6. Clique em "Executar" para rodar a heurística e ver os resultados.
 
 
-PARÂMETROS DAS HEURÍSTICAS
----------------------------
+COMO USAR — ALGORITMOS GENÉTICOS
+----------------------------------
+1. No menu lateral, selecione "Algoritmos Genéticos".
+2. Escolha o Tipo de Execução (FIXO ou ALEATÓRIO) e informe N se necessário.
+3. Clique em "Gerar Problema" para criar a instância.
+4. Configure os parâmetros do AG na coluna esquerda:
+     • TP — Tamanho da População  (ex.: 20)
+     • NG — Número de Gerações    (ex.: 100)
+     • TC — Taxa de Cruzamento    (ex.: 0.80)
+     • TM — Taxa de Mutação       (ex.: 0.10)
+     • IG — Intervalo de Geração  (ex.: 0.20)
+5. Clique em "Executar AG".
+6. A coluna direita exibirá:
+     • Valor inicial (solução gulosa) e valor final (AG)
+     • Ganho absoluto e ganho percentual (%)
+     • Peso utilizado e itens selecionados
+     • Vetores binários da solução inicial e final
+     • Curva de convergência (quando há melhora ao longo das gerações)
+
+
+PARÂMETROS DAS HEURÍSTICAS CLÁSSICAS
+--------------------------------------
   SET:
-    TMAX  — número de reinicializações aleatórias (ex.: N, N/2, 2*N)
+    TMAX  — número de tentativas sem melhora antes de encerrar
 
   TE:
     TI    — temperatura inicial (ex.: 100, 200, 500)
     TF    — temperatura final   (ex.: 0.1, 0.01)
-    FR    — fator de resfriamento entre 0 e 1 (ex.: 0.8, 0.9)
+    FR    — fator de resfriamento 0–1 (ex.: 0.8, 0.9)
+
+PARÂMETROS DO ALGORITMO GENÉTICO
+----------------------------------
+  TP    — tamanho da população (número de indivíduos)
+  NG    — número de gerações evolutivas
+  TC    — probabilidade de cruzamento entre dois pais (0–1)
+  TM    — probabilidade de mutação de um bit (0–1)
+  IG    — fração de elite preservada por geração (0–1)
 
 
 DEPENDÊNCIAS COMPLETAS (pip freeze)

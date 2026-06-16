@@ -14,6 +14,7 @@ import streamlit as st
 from knapsack import (
     PROBLEMA_FIXO,
     KnapsackProblem,
+    algoritmo_genetico,
     analise_comparativa,
     avalia,
     calcular_peso,
@@ -41,6 +42,14 @@ _DEFAULTS: dict = {
     "problema":        None,   # KnapsackProblem
     "solucao_inicial": None,   # List[int]
     "valor_inicial":   0,      # int
+    # AG
+    "ag_problema":     None,   # KnapsackProblem (problema gerado na aba AG)
+    "ag_executado":    False,  # flag de resultado disponível
+    "ag_si":           None,
+    "ag_sf":           None,
+    "ag_vi":           0,
+    "ag_vf":           0,
+    "ag_hist":         [],
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -66,7 +75,162 @@ with st.sidebar:
 
 if pagina == "Algoritmos Genéticos":
     st.title("Algoritmos Genéticos")
-    st.info("Módulo em desenvolvimento.")
+
+    col_esq_ag, col_dir_ag = st.columns([1, 1.6], gap="large")
+
+    # -------------------------------------------------------------------
+    # Coluna esquerda — configuração do problema e parâmetros do AG
+    # -------------------------------------------------------------------
+    with col_esq_ag:
+        st.subheader("Configuração do Problema")
+
+        tipo_ag = st.radio(
+            "Tipo de Execução",
+            ["FIXO", "ALEATÓRIO"],
+            horizontal=True,
+            key="ag_tipo",
+        )
+
+        n_ag: int = PROBLEMA_FIXO.n
+        if tipo_ag == "ALEATÓRIO":
+            n_ag = st.number_input(
+                "Tamanho do Problema (N — número de itens)",
+                min_value=5,
+                max_value=200,
+                value=20,
+                step=1,
+                key="ag_n",
+            )
+
+        if st.button("Gerar Problema", use_container_width=True, type="primary", key="ag_gerar"):
+            if tipo_ag == "FIXO":
+                st.session_state.ag_problema = PROBLEMA_FIXO
+            else:
+                st.session_state.ag_problema = gerar_problema_aleatorio(int(n_ag))
+            st.session_state.ag_executado = False
+
+        if st.session_state.ag_problema is not None:
+            prob_ag: KnapsackProblem = st.session_state.ag_problema
+
+            st.divider()
+            c1, c2 = st.columns(2)
+            c1.metric("N (itens)",       prob_ag.n)
+            c2.metric("Capacidade (kg)", prob_ag.capacidade)
+
+            df_ag = pd.DataFrame({
+                "Item":  [f"Item {i + 1}" for i in range(prob_ag.n)],
+                "Peso":  prob_ag.pesos,
+                "Valor": prob_ag.valores,
+            })
+            st.dataframe(df_ag, hide_index=True, use_container_width=True, height=220)
+
+        st.divider()
+        st.subheader("Parâmetros do AG")
+
+        tp_ag = st.number_input(
+            "TP — Tamanho da População",
+            min_value=4, max_value=500, value=20, step=2,
+            help="Número de indivíduos por geração.",
+        )
+        ng_ag = st.number_input(
+            "NG — Número de Gerações",
+            min_value=1, max_value=5000, value=100, step=10,
+            help="Quantidade de gerações evolutivas.",
+        )
+        tc_ag = st.number_input(
+            "TC — Taxa de Cruzamento",
+            min_value=0.0, max_value=1.0, value=0.8, step=0.05, format="%.2f",
+            help="Probabilidade de cruzamento entre dois pais.",
+        )
+        tm_ag = st.number_input(
+            "TM — Taxa de Mutação",
+            min_value=0.0, max_value=1.0, value=0.1, step=0.01, format="%.2f",
+            help="Probabilidade de mutação de um bit.",
+        )
+        ig_ag = st.number_input(
+            "IG — Intervalo de Geração (elitismo)",
+            min_value=0.0, max_value=1.0, value=0.2, step=0.05, format="%.2f",
+            help="Fração de elite preservada a cada geração.",
+        )
+
+        btn_exec = st.button(
+            "Executar AG",
+            use_container_width=True,
+            type="primary",
+            key="ag_exec",
+            disabled=(st.session_state.ag_problema is None),
+        )
+
+    # -------------------------------------------------------------------
+    # Coluna direita — resultados
+    # -------------------------------------------------------------------
+    with col_dir_ag:
+        if st.session_state.ag_problema is None:
+            st.info("Gere um problema para começar.")
+        elif btn_exec:
+            prob_ag: KnapsackProblem = st.session_state.ag_problema
+            with st.spinner("Executando Algoritmo Genético…"):
+                si_ag, sf_ag, vi_ag, vf_ag, hist_ag = algoritmo_genetico(
+                    prob_ag,
+                    tp=int(tp_ag),
+                    ng=int(ng_ag),
+                    tc=float(tc_ag),
+                    tm=float(tm_ag),
+                    ig=float(ig_ag),
+                )
+            st.session_state.ag_si      = si_ag
+            st.session_state.ag_sf      = sf_ag
+            st.session_state.ag_vi      = vi_ag
+            st.session_state.ag_vf      = vf_ag
+            st.session_state.ag_hist    = hist_ag
+            st.session_state.ag_executado = True
+
+        if st.session_state.ag_executado:
+            prob_ag: KnapsackProblem = st.session_state.ag_problema
+            si_ag   = st.session_state.ag_si
+            sf_ag   = st.session_state.ag_sf
+            vi_ag   = st.session_state.ag_vi
+            vf_ag   = st.session_state.ag_vf
+            hist_ag = st.session_state.ag_hist
+
+            ganho_abs = vf_ag - vi_ag
+            ganho_pct = (ganho_abs / vi_ag * 100) if vi_ag > 0 else 0.0
+            peso_final = calcular_peso(sf_ag, prob_ag)
+
+            st.subheader("Resultado — Algoritmo Genético")
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Valor Inicial",  vi_ag)
+            c2.metric(
+                "Valor Final",
+                vf_ag,
+                delta=f"{ganho_abs:+d}",
+                delta_color="normal" if ganho_abs >= 0 else "inverse",
+            )
+            c3.metric("Ganho (%)", f"{ganho_pct:+.1f} %")
+
+            c4, c5 = st.columns(2)
+            c4.metric("Peso Final", f"{peso_final} / {prob_ag.capacidade}")
+            c5.metric("Itens Selecionados", sum(sf_ag))
+
+            with st.expander("Ver solução inicial (gulosa)"):
+                st.code("  ".join(str(b) for b in si_ag), language=None)
+                sel_i = [f"Item {i+1}" for i, b in enumerate(si_ag) if b == 1]
+                st.caption("Itens: " + (", ".join(sel_i) if sel_i else "nenhum"))
+
+            with st.expander("Ver solução final (AG)"):
+                st.code("  ".join(str(b) for b in sf_ag), language=None)
+                sel_f = [f"Item {i+1}" for i, b in enumerate(sf_ag) if b == 1]
+                st.caption("Itens: " + (", ".join(sel_f) if sel_f else "nenhum"))
+
+            if len(hist_ag) > 1:
+                st.subheader("Curva de Convergência")
+                st.line_chart(
+                    pd.DataFrame({"Melhor Valor": hist_ag}),
+                    use_container_width=True,
+                )
+            else:
+                st.info("AG não encontrou melhora além da solução inicial — curva sem evolução.")
 
 # ===========================================================================
 # PÁGINA: Sobre
