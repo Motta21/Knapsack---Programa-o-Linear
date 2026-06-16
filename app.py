@@ -84,29 +84,17 @@ if pagina == "Algoritmos Genéticos":
     with col_esq_ag:
         st.subheader("Configuração do Problema")
 
-        tipo_ag = st.radio(
-            "Tipo de Execução",
-            ["FIXO", "ALEATÓRIO"],
-            horizontal=True,
-            key="ag_tipo",
+        n_ag = st.number_input(
+            "Tamanho do Problema (N — número de itens)",
+            min_value=5,
+            max_value=200,
+            value=20,
+            step=1,
+            key="ag_n",
         )
 
-        n_ag: int = PROBLEMA_FIXO.n
-        if tipo_ag == "ALEATÓRIO":
-            n_ag = st.number_input(
-                "Tamanho do Problema (N — número de itens)",
-                min_value=5,
-                max_value=200,
-                value=20,
-                step=1,
-                key="ag_n",
-            )
-
         if st.button("Gerar Problema", use_container_width=True, type="primary", key="ag_gerar"):
-            if tipo_ag == "FIXO":
-                st.session_state.ag_problema = PROBLEMA_FIXO
-            else:
-                st.session_state.ag_problema = gerar_problema_aleatorio(int(n_ag))
+            st.session_state.ag_problema = gerar_problema_aleatorio(int(n_ag))
             st.session_state.ag_executado = False
 
         if st.session_state.ag_problema is not None:
